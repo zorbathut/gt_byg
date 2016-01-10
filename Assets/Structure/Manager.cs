@@ -59,26 +59,17 @@ public class Manager : MonoBehaviour
             m_Data[position.x][position.z] = structure;
         }
 
-        public void Set(int x, int z, T structure)
-        {
-            Set(new IntVector2(x, z), structure);
-        }
-
-        public void Clear(IntVector2 position)
+        public void Clear(IntVector2 position, T structure)
         {
             if (Lookup(position))
             {
+                Assert.IsTrue(Lookup(position) == structure);
                 m_Data[position.x][position.z] = null;
             }
             else
             {
                 Assert.IsNotNull(Lookup(position));
             }
-        }
-
-        public void Clear(int x, int z)
-        {
-            Clear(new IntVector2(x, z));
         }
     }
     GridLookup<Structure> m_WorldLookup = new GridLookup<Structure>();
@@ -151,6 +142,8 @@ public class Manager : MonoBehaviour
             m_WorldLookup.Set(IndexFromGrid(position), newStructure);
         }
 
+        ResyncDoorwaysAround(newStructure);
+
         return true;
     }
 
@@ -158,8 +151,26 @@ public class Manager : MonoBehaviour
     {
         errorMessage = null;
 
+        Structure targetStructure = m_WorldLookup.Lookup(IndexFromGrid(position));
 
-        //m_StructureList.Remove(removalTarget);
-        //Destroy(removalTarget.gameObject);
+        if (!targetStructure)
+        {
+            errorMessage = "There is nothing to remove.";
+            return;
+        }
+
+        foreach (Vector3 occupiedPosition in targetStructure.GetOccupied())
+        {
+            m_WorldLookup.Clear(IndexFromGrid(occupiedPosition), targetStructure);
+        }
+
+        ResyncDoorwaysAround(targetStructure);
+
+        Destroy(targetStructure.gameObject);
+    }
+
+    void ResyncDoorwaysAround(Structure structure)
+    {
+        // todo: actually do the thing this function is intended for
     }
 }
