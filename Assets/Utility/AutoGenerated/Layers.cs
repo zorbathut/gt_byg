@@ -6,10 +6,12 @@ public class Layers
 	public const string IgnoreRaycast_Name = "Ignore Raycast";
 	public const string Water_Name = "Water";
 	public const string UI_Name = "UI";
+	public const string BuildTarget_Name = "BuildTarget";
 
 	public const int Default = 0;
 	public const int TransparentFX = 1;
 	public const int IgnoreRaycast = 2;
 	public const int Water = 4;
 	public const int UI = 5;
+	public const int BuildTarget = 8;
 }
