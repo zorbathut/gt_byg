@@ -34,6 +34,22 @@ public class Builder : MonoBehaviour
             Vector3 targetPosition = Manager.GridFromWorld(hit.point);
             m_BuildCursor.transform.position = targetPosition;
         }
+
+        string errorMessage = null;
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Manager.instance.Place(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out errorMessage);
+        }
+        else if (Input.GetMouseButtonDown(1))
+        {
+            Manager.instance.Remove(m_BuildCursor.transform.position, out errorMessage);
+        }
+
+        if (errorMessage != null)
+        {
+            Debug.LogFormat("Error: {0}", errorMessage);
+        }
     }
 
     void ResyncBuildCursor()

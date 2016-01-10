@@ -82,7 +82,6 @@ public class Manager : MonoBehaviour
         }
     }
     GridLookup<Structure> m_WorldLookup = new GridLookup<Structure>();
-    List<Structure> m_StructureList = new List<Structure>();
 
     /////////////////////////////////////////////
     // INFRASTRUCTURE
@@ -100,11 +99,12 @@ public class Manager : MonoBehaviour
 
     public static Vector3 GridFromWorld(Vector3 input)
     {
-        return new Vector3(MathUtil.RoundTo(input.x, Constants.GridSize), input.y, MathUtil.RoundTo(input.z, Constants.GridSize));
+        return new Vector3(MathUtil.RoundTo(input.x, Constants.GridSize), 0f, MathUtil.RoundTo(input.z, Constants.GridSize));
     }
 
-    public static IntVector2 IndexFromWorld(Vector3 input)
+    public static IntVector2 IndexFromGrid(Vector3 input)
     {
+        Assert.IsTrue(input == GridFromWorld(input));
         return new IntVector2(Mathf.RoundToInt(input.x / Constants.GridSize), Mathf.RoundToInt(input.z / Constants.GridSize));
     }
 
@@ -117,14 +117,39 @@ public class Manager : MonoBehaviour
     // STRUCTURE PLACEMENT
     //
 
-    public bool PlaceAttempt(Structure structure, Vector3 position, out string errorMessage)
+    public bool Place(Structure structure, Transform transform, out string errorMessage)
     {
         errorMessage = null;
 
-        IntVector2 target = IndexFromWorld(position);
-        IntVector2 playerTarget = IndexFromWorld(GameObject.FindGameObjectWithTag(Tags.Player).transform.position);
+        Structure newStructure = Instantiate(structure);
+        newStructure.transform.position = transform.position;
+        newStructure.transform.rotation = transform.rotation;
 
+        Vector3 playerTarget = GridFromWorld(GameObject.FindGameObjectWithTag(Tags.Player).transform.position);
 
+        foreach (Vector3 position in newStructure.GetOccupied())
+        {
+            if (m_WorldLookup.Lookup(IndexFromGrid(position)))
+            {
+                errorMessage = "That building would overlap another building.";
+                Destroy(newStructure.gameObject);
+                return false;
+            }
+
+            if (playerTarget == position)
+            {
+                errorMessage = "Standing in a construction zone is dangerous.";
+                Destroy(newStructure.gameObject);
+                return false;
+            }
+        }
+
+        // Can be built; go ahead and do it
+
+        foreach (Vector3 position in newStructure.GetOccupied())
+        {
+            m_WorldLookup.Set(IndexFromGrid(position), newStructure);
+        }
 
         return true;
     }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Assertions;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Structure : MonoBehaviour
 {
@@ -9,25 +10,47 @@ public class Structure : MonoBehaviour
 
     protected virtual void Awake()
     {
-        // Validate position on grid
+        // Clamp occupied/doorway to grid
+        foreach (Transform occupiedSquare in m_Occupied)
+        {
+            occupiedSquare.transform.position = Manager.GridFromWorld(occupiedSquare.transform.position);
+        }
 
-        // Validate occupied/doorway
-        
+        // Clamp doorways to doorway grid
+        foreach (Transform doorwaySquare in m_Doorway)
+        {
+            doorwaySquare.transform.position = new Vector3(MathUtil.RoundTo(doorwaySquare.position.x, Constants.GridSize / 2), 0f, MathUtil.RoundTo(doorwaySquare.position.z, Constants.GridSize / 2));
+        }
     }
 
     public bool HasOccupied(Vector3 position)
     {
         Assert.IsTrue(position == Manager.GridFromWorld(position));
 
-        foreach (Transform occupiedSquare in m_Occupied)
+        foreach (Vector3 occupied in GetOccupied())
         {
-            if (occupiedSquare.position ==  position)
+            if (occupied ==  position)
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    // This is potentially unnecessarily slow, but it's not called often enough to really matter, and frequently it's called when the object has, in fact, moved
+    // If it turned out to be a speed issue one could easily cache the result using the position and rotation as keys to invalidate the cache
+    public Vector3[] GetOccupied()
+    {
+        List<Vector3> positions = new List<Vector3>();
+
+        foreach (Transform occupiedSquare in m_Occupied)
+        {
+            Assert.IsTrue(occupiedSquare.position == Manager.GridFromWorld(occupiedSquare.position));
+            positions.Add(occupiedSquare.position);
+        }
+
+        return positions.ToArray();
     }
 
     #if UNITY_EDITOR
@@ -71,7 +94,7 @@ public class Structure : MonoBehaviour
     bool ValidateDoorway(Vector3 position, out Vector3 doorwayCenter, out bool alongZ)
     {
         // Round to half-grid position
-        doorwayCenter = new Vector3(MathUtil.RoundTo(position.x, Constants.GridSize / 2), position.y, MathUtil.RoundTo(position.z, Constants.GridSize / 2));
+        doorwayCenter = new Vector3(MathUtil.RoundTo(position.x, Constants.GridSize / 2), 0f, MathUtil.RoundTo(position.z, Constants.GridSize / 2));
 
         // Check to see if we're on exactly one half-grid
         bool xAligned = Mathf.Abs(doorwayCenter.x - MathUtil.RoundTo(doorwayCenter.x, Constants.GridSize)) < 0.1f;
