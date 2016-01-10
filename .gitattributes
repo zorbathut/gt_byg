@@ -1,0 +1,18 @@
+* -text
+*.meta eol=crlf
+*.cs eol=crlf
+*.shader eol=crlf
+*.mat eol=crlf
+*.prefab eol=crlf
+*.asset eol=crlf
+*.obj=crlf
+*.physicmaterial eol=crlf
+*.unity eol=crlf
+*.txt eol=crlf
+*.flare eol=crlf
+*.physicMaterial eol=crlf
+*.controller eol=crlf
+*.xml eol=crlf
+*.gitignore eol=crlf
+*.gitatributes eol=crlf
+*.cginc eol=crlf
