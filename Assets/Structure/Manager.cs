@@ -98,31 +98,17 @@ public class Manager : MonoBehaviour
     // COORDINATES
     //
 
-    public Vector3 GridFromWorld(Vector3 input)
+    public static Vector3 GridFromWorld(Vector3 input)
     {
-        Vector3 result = new Vector3(Mathf.Round(input.x / Constants.GridSize) * Constants.GridSize, input.y + 10, Mathf.Round(input.z / Constants.GridSize) * Constants.GridSize);
-
-        // Find the y position of the real ground
-        RaycastHit hit;
-        if (Physics.Raycast(result, Vector3.down, out hit, 20, 1 << Layers.BuildTarget))
-        {
-            result.y = hit.point.y;
-        }
-        else
-        {
-            // well okay, this is going to be weird
-            result.y = input.y;
-        }
-
-        return result;
+        return new Vector3(MathUtil.RoundTo(input.x, Constants.GridSize), input.y, MathUtil.RoundTo(input.z, Constants.GridSize));
     }
 
-    public IntVector2 IndexFromWorld(Vector3 input)
+    public static IntVector2 IndexFromWorld(Vector3 input)
     {
         return new IntVector2(Mathf.RoundToInt(input.x / Constants.GridSize), Mathf.RoundToInt(input.z / Constants.GridSize));
     }
 
-    public Vector3 GridFromIndex(IntVector2 input)
+    public static Vector3 GridFromIndex(IntVector2 input)
     {
         return new Vector3(input.x * Constants.GridSize, 0, input.z * Constants.GridSize);
     }
