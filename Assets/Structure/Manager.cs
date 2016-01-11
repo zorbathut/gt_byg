@@ -113,7 +113,7 @@ public class Manager : MonoBehaviour
     // STRUCTURE PLACEMENT
     //
 
-    public bool Place(Structure structure, Transform transform, out string errorMessage)
+    public bool AttemptPlace(Structure structure, Transform transform, out string errorMessage)
     {
         errorMessage = null;
 
@@ -152,7 +152,7 @@ public class Manager : MonoBehaviour
         return true;
     }
 
-    public void Remove(Vector3 position, out string errorMessage)
+    public bool AttemptRemove(Vector3 position, out string errorMessage)
     {
         errorMessage = null;
 
@@ -161,7 +161,7 @@ public class Manager : MonoBehaviour
         if (!targetStructure)
         {
             errorMessage = "There is nothing to remove.";
-            return;
+            return false;
         }
 
         foreach (Vector3 occupiedPosition in targetStructure.GetOccupied())
@@ -172,6 +172,8 @@ public class Manager : MonoBehaviour
         ResyncDoorwaysAround(targetStructure);
 
         Destroy(targetStructure.gameObject);
+
+        return true;
     }
 
     void ResyncDoorwaysAround(Structure structure)

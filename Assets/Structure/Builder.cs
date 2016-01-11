@@ -17,12 +17,23 @@ public class Builder : MonoBehaviour
 
     protected virtual void Update()
     {
+        string popupMessage = null;
+
         for (int i = 0; i < m_Buildables.Count; ++i)
         {
             if (Input.GetKeyDown((i + 1).ToString()))
             {
                 m_CurrentBuildable = i;
                 ResyncBuildCursor();
+
+                if (m_Buildables[i])
+                {
+                    popupMessage = string.Format("Selected building {0}", m_Buildables[i]);
+                }
+                else
+                {
+                    popupMessage = "Selected removal tool";
+                }
             }
         }
 
@@ -43,20 +54,19 @@ public class Builder : MonoBehaviour
             m_BuildCursor.transform.position = targetPosition;
         }
 
-        string errorMessage = null;
-
         if (Input.GetMouseButtonDown(0))
         {
-            Manager.instance.Place(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out errorMessage);
+            Manager.instance.AttemptPlace(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out popupMessage);
         }
         else if (Input.GetMouseButtonDown(1))
         {
-            Manager.instance.Remove(m_BuildCursor.transform.position, out errorMessage);
+            Manager.instance.AttemptRemove(m_BuildCursor.transform.position, out popupMessage);
         }
 
-        if (errorMessage != null)
+        if (popupMessage != null)
         {
-            Debug.LogFormat("Error: {0}", errorMessage);
+            GameObject.FindGameObjectWithTag(Tags.UI).GetComponent<MainUI>().GetPopupText().DisplayText(popupMessage, Color.white);
+            Debug.LogFormat("Error: {0}", popupMessage);
         }
     }
 
