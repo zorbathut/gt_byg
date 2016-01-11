@@ -64,7 +64,12 @@ public class Manager : MonoBehaviour
             if (Lookup(position))
             {
                 Assert.IsTrue(Lookup(position) == structure);
-                m_Data[position.x][position.z] = null;
+                m_Data[position.x].Remove(position.z);
+                if (m_Data[position.x].Count == 0)
+                {
+                    // guess we can clean this up
+                    m_Data.Remove(position.x);
+                }
             }
             else
             {
