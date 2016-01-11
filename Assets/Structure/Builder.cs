@@ -5,10 +5,9 @@ using System.Collections.Generic;
 
 public class Builder : MonoBehaviour
 {
-    [SerializeField]
-    List<Structure> m_Buildables;
+    [SerializeField] List<Structure> m_Buildables;
 
-    int m_CurrentBuildable = 0;
+    int m_CurrentBuildable = 1;
     Structure m_BuildCursor;
 
     protected virtual void Awake()
@@ -18,6 +17,15 @@ public class Builder : MonoBehaviour
 
     protected virtual void Update()
     {
+        for (int i = 0; i < m_Buildables.Count; ++i)
+        {
+            if (Input.GetKeyDown((i + 1).ToString()))
+            {
+                m_CurrentBuildable = i;
+                ResyncBuildCursor();
+            }
+        }
+
         if (Input.mouseScrollDelta.y > 0)
         {
             m_BuildCursor.transform.Rotate(Vector3.up, 90);
