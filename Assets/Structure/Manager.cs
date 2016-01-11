@@ -128,7 +128,7 @@ public class Manager : MonoBehaviour
         newStructure.transform.position = transform.position;
         newStructure.transform.rotation = transform.rotation;
 
-        Vector3 playerTarget = GridFromWorld(GameObject.FindGameObjectWithTag(Tags.Player).transform.position);
+        Vector3 playerGrid = GridFromWorld(GameObject.FindGameObjectWithTag(Tags.Player).transform.position);
 
         // Make sure each square that will be filled by a building isn't currently filled by either structure or player
         foreach (Vector3 position in newStructure.GetOccupied())
@@ -140,7 +140,7 @@ public class Manager : MonoBehaviour
                 return false;
             }
 
-            if (playerTarget == position)
+            if (playerGrid == position)
             {
                 errorMessage = "Standing in a construction zone is dangerous.";
                 Destroy(newStructure.gameObject);
@@ -157,7 +157,7 @@ public class Manager : MonoBehaviour
         }
 
         // At this point, at least it's plugged into the world properly, even if it's not necessarily fully set up
-        // an exception after this comment will still result in a structure that's removable by the player
+        // An exception after this comment will still result in a structure that's removable by the player
 
         ResyncDoorwaysAround(newStructure);
 
@@ -182,6 +182,8 @@ public class Manager : MonoBehaviour
             m_WorldLookup.Clear(IndexFromGrid(occupiedPosition), targetStructure);
         }
 
+        // Resync doorways of stuff that *was* adjacent
+        // that info is still available in targetStructure, even though targetStructure itself is no longer in the world lookup db
         ResyncDoorwaysAround(targetStructure);
 
         // And we're done! Clean up the object
@@ -195,7 +197,7 @@ public class Manager : MonoBehaviour
         // First, figure out which set of structures needs to be resynced
         HashSet<Structure> resync = new HashSet<Structure>();
 
-        // Iterate over every grid adjacent to every grid that this structure occupies; add those to a resync
+        // Iterate over every grid adjacent to every grid that this structure occupies; add those to the pending resync
         foreach (Vector3 occupiedPosition in structure.GetOccupied())
         {
             foreach (Vector3 delta in MathUtil.GetManhattanAdjacencies())
@@ -208,7 +210,7 @@ public class Manager : MonoBehaviour
             }
 
             // We don't add the passed-in structure itself because that breaks if the structure is mid-removal; instead, we just add whatever's in the location where the structure "should" be
-            // That will be null on removal
+            // This will be null on removal, but that's OK, we just won't add it
             Structure location = m_WorldLookup.Lookup(IndexFromGrid(occupiedPosition));
             if (location)
             {
@@ -218,7 +220,7 @@ public class Manager : MonoBehaviour
 
         // Now that we have an appropriate set of structures, resynchronize linkages in all of them
         // In theory these could share information; in practice, we're looking at a 2x speedup there at best
-        // and even with impractically large structures, the performance of recalculating doorways is negligable
+        // And even with impractically large structures, the performance of recalculating doorways is negligable
         foreach (Structure target in resync)
         {
             target.ResyncDoorways();

@@ -29,7 +29,7 @@ public class Builder : MonoBehaviour
                 m_CurrentBuildable = i;
                 ResyncBuildCursor();
 
-                if (m_BuildCursor.GetDestroyTool())
+                if (m_BuildCursor.IsDestroyTool())
                 {
                     popupMessage = "Selected removal tool";
                 }
@@ -56,7 +56,9 @@ public class Builder : MonoBehaviour
         if (Physics.Raycast(screenRay, out hit, Mathf.Infinity))
         {
             // Our target point slightly penetrates through; this is so aiming at a building actually targets a point inside the building, instead of the very edge of the building
-            Vector3 targetPoint = hit.point + screenRay * 0.1f;
+            // Makes destroying buildings a whole lot easier
+            // 0.01 meters is more than enough to avoid floating-point inaccuracy
+            Vector3 targetPoint = hit.point + screenRay.direction * 0.01f;
 
             Vector3 targetPosition = Manager.GridFromWorld(targetPoint);
             m_BuildCursor.transform.position = targetPosition;
@@ -68,17 +70,17 @@ public class Builder : MonoBehaviour
             m_BuildCursor.gameObject.SetActive(false);
         }
 
-        // Tool usage
-        if (Input.GetMouseButtonDown(0) && !m_BuildCursor.GetDestroyTool())
+        // Actually do things
+        if (Input.GetMouseButtonDown(0) && !m_BuildCursor.IsDestroyTool())
         {
             Manager.instance.AttemptPlace(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out popupMessage);
         }
-        else if (Input.GetMouseButtonDown(0) && m_BuildCursor.GetDestroyTool())
+        else if (Input.GetMouseButtonDown(0) && m_BuildCursor.IsDestroyTool())
         {
             Manager.instance.AttemptRemove(m_BuildCursor.transform.position, out popupMessage);
         }
 
-        // Show our debug message, if we have one
+        // Show our popup message, if we have one
         if (popupMessage != null)
         {
             GameObject.FindGameObjectWithTag(Tags.UI).GetComponent<MainUI>().GetPopupText().DisplayText(popupMessage, Color.white);
@@ -99,7 +101,7 @@ public class Builder : MonoBehaviour
         m_BuildCursor = Instantiate(m_Buildables[m_CurrentBuildable]);
         m_BuildCursor.gameObject.SetActive(false);  // Start disabled - on the off chance the player mashes two buttons in one frame, this will make the old one invisible
 
-        if (!m_BuildCursor.GetDestroyTool())
+        if (!m_BuildCursor.IsDestroyTool())
         {
             // Override materials for the construction tool
             foreach (MeshRenderer renderer in m_BuildCursor.GetComponentsInChildren<MeshRenderer>())

@@ -10,12 +10,10 @@ public class Structure : MonoBehaviour
 
     [SerializeField] bool m_DestroyTool = false;
 
-    [SerializeField, HideInInspector] bool m_Standardized = false;
-    
     protected virtual void Awake()
     {
-        // Run an initialization pass to validate positions for development and generate intermediate info
-        if (!m_Standardized && !m_DestroyTool)
+        // Run an initialization pass to validate positions for development
+        if (!m_DestroyTool)
         {
             // Validate that occupied flags are on grid
             foreach (Transform occupiedSquare in m_Occupied)
@@ -28,8 +26,6 @@ public class Structure : MonoBehaviour
             {
                 Assert.IsTrue(ValidateDoorway(doorwaySquare.position));
             }
-
-            m_Standardized = true;
         }
     }
 
@@ -63,7 +59,7 @@ public class Structure : MonoBehaviour
         return false;
     }
 
-    public bool GetDestroyTool()
+    public bool IsDestroyTool()
     {
         return m_DestroyTool;
     }
@@ -180,7 +176,7 @@ public class Structure : MonoBehaviour
         Vector3 clampedCenter = new Vector3(MathUtil.RoundTo(position.x, Constants.GridSize / 2), 0f, MathUtil.RoundTo(position.z, Constants.GridSize / 2));
 
         {
-            // Check to see if we're on exactly *one* half-grid - if so, we're in the middle of a wall. Two half-grids would be a corner, zero would be in the middle of a square.
+            // Check to see if exactly *one* axis is on a half-grid - if so, we're in the middle of a wall. Two half-grids would be a corner, zero would be in the middle of a square
             bool xAligned = clampedCenter.x == MathUtil.RoundTo(clampedCenter.x, Constants.GridSize);
             bool zAligned = clampedCenter.z == MathUtil.RoundTo(clampedCenter.z, Constants.GridSize);
 
