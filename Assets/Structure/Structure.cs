@@ -90,9 +90,21 @@ public class Structure : MonoBehaviour
                 continue;
             }
 
-            Debug.LogFormat("Processing door {0} along {1}", doorway.transform.position, info.m_OriginalAlongZ);
-            Structure lhs = Manager.instance.StructureFromGrid(doorway.transform.position - (info.m_OriginalAlongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
-            Structure rhs = Manager.instance.StructureFromGrid(doorway.transform.position + (info.m_OriginalAlongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+            bool alongZ = info.m_OriginalAlongZ;
+
+            // Deal with 90-degree rotations; we'll have a swapped direction for doors in that case
+            {
+                float angle;
+                Vector3 axis;
+                transform.rotation.ToAngleAxis(out angle, out axis);
+                if (angle != 0 && angle != 180)
+                {
+                    alongZ = !alongZ;
+                }
+            }
+
+            Structure lhs = Manager.instance.StructureFromGrid(doorway.transform.position - (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+            Structure rhs = Manager.instance.StructureFromGrid(doorway.transform.position + (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
 
             bool doorwayBlocked = true;
 
