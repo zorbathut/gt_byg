@@ -28,13 +28,13 @@ public class Builder : MonoBehaviour
                 m_CurrentBuildable = i;
                 ResyncBuildCursor();
 
-                if (m_Buildables[i])
+                if (m_BuildCursor.GetDestroyTool())
                 {
-                    popupMessage = string.Format("Selected building {0}", m_Buildables[i]);
+                    popupMessage = "Selected removal tool";
                 }
                 else
                 {
-                    popupMessage = "Selected removal tool";
+                    popupMessage = string.Format("Selected building {0}", m_Buildables[i]);
                 }
             }
         }
@@ -68,7 +68,7 @@ public class Builder : MonoBehaviour
         if (popupMessage != null)
         {
             GameObject.FindGameObjectWithTag(Tags.UI).GetComponent<MainUI>().GetPopupText().DisplayText(popupMessage, Color.white);
-            Debug.LogFormat("Error: {0}", popupMessage);
+            Debug.LogFormat("Message: {0}", popupMessage);
         }
     }
 

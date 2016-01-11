@@ -922,9 +922,9 @@ MonoBehaviour:
     m_LineSpacing: 1
   m_Text: 'Use number keys 2, 3, 4, and 5 to choose a building.
 
-    Use number 1 to choose the Destruction tool.
+    Use number 1 to choose the Removal tool.
 
-    Left-click places building or destroys a building.
+    Left-click places building or removes a building.
 
     Mouse-wheel rotates.'
 --- !u!222 &1766932511
