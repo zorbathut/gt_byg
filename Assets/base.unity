@@ -926,7 +926,9 @@ MonoBehaviour:
 
     Left-click places building or removes a building.
 
-    Mouse-wheel rotates.'
+    Mouse-wheel rotates buildings.
+
+    Space jumps; building from a rooftop is convenient.'
 --- !u!222 &1766932511
 CanvasRenderer:
   m_ObjectHideFlags: 0
