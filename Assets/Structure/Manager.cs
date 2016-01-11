@@ -173,7 +173,6 @@ public class Manager : MonoBehaviour
     {
         // First, figure out which set of structures needs to be resynced
         HashSet<Structure> resync = new HashSet<Structure>();
-        resync.Add(structure);
 
         foreach (Vector3 occupiedPosition in structure.GetOccupied())
         {
@@ -185,9 +184,16 @@ public class Manager : MonoBehaviour
                     resync.Add(adjacent);
                 }
             }
+
+            // we don't add the structure itself because that breaks if the structure is being removed; instead, we just add whatever's in the location where the structure "should" be
+            Structure location = m_WorldLookup.Lookup(IndexFromGrid(occupiedPosition));
+            if (location)
+            {
+                resync.Add(location);
+            }
         }
 
-        // Now that we have an appropriate set of structures, go through each door in each structure and look for an appropriate linkage
+        // Now that we have an appropriate set of structures, resynchronize linkages in all of them
         foreach (Structure target in resync)
         {
             target.ResyncDoorways();
