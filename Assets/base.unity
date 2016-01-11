@@ -336,7 +336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Buildables:
-  - {fileID: 11457042, guid: acd79afdb77ea1b469b70decfdb9c902, type: 2}
+  - {fileID: 11440228, guid: 59ef47ed874a30b40b6e40d0d03461fa, type: 2}
 --- !u!1 &207259028
 GameObject:
   m_ObjectHideFlags: 0
