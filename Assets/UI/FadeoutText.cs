@@ -22,7 +22,7 @@ public class FadeoutText : MonoBehaviour
         Update();
     }
 
-    public virtual void Update()
+    protected virtual void Update()
     {
         m_Time += Time.deltaTime;
 

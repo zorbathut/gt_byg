@@ -14,16 +14,16 @@ public class Structure : MonoBehaviour
     
     protected virtual void Awake()
     {
-        // Run an initialization pass to generate intermediate info
+        // Run an initialization pass to validate positions for development and generate intermediate info
         if (!m_Standardized && !m_DestroyTool)
         {
-            // Clamp occupied/doorway to grid
+            // Validate that occupied flags are on grid
             foreach (Transform occupiedSquare in m_Occupied)
             {
                 Assert.IsTrue(ValidateOccupied(occupiedSquare.transform.position));
             }
 
-            // Clamp doorways to doorway grid
+            // Validate that doorways are on grid; also, attach StructureDoorwayInfo so we don't have
             foreach (Transform doorwaySquare in m_Doorway)
             {
                 bool alongZ;
@@ -38,13 +38,14 @@ public class Structure : MonoBehaviour
         }
     }
 
+    // true if this structure occupies a grid position; O(n) in number of Occupied's
     public bool HasOccupied(Vector3 position)
     {
         Assert.IsTrue(position == Manager.GridFromWorld(position));
 
         foreach (Vector3 occupied in GetOccupied())
         {
-            if (occupied ==  position)
+            if ((occupied - position).magnitude < Constants.GridSize / 100)  // we'll get tons of asserts long before this epsilon is too large
             {
                 return true;
             }
@@ -53,11 +54,12 @@ public class Structure : MonoBehaviour
         return false;
     }
 
+    // true if this structure has a doorway; O(n) in number of Doorway's
     public bool HasDoorway(Vector3 position)
     {
         foreach (Transform doorway in m_Doorway.transform)
         {
-            if (doorway.transform.position == position)
+            if ((doorway.transform.position - position).magnitude < Constants.GridSize / 100)  // we'll get tons of asserts long before this epsilon is too large
             {
                 return true;
             }
@@ -71,7 +73,7 @@ public class Structure : MonoBehaviour
         return m_DestroyTool;
     }
 
-    // This is potentially unnecessarily slow, but it's not called often enough to really matter, and frequently it's called when the object has, in fact, moved
+    // This is kinda unnecessarily slow, but it's not called often enough to really matter, and frequently it's called when the object has, in fact, moved
     // If it turned out to be a speed issue one could easily cache the result using the position and rotation as keys to invalidate the cache
     public IEnumerable<Vector3> GetOccupied()
     {
@@ -98,6 +100,7 @@ public class Structure : MonoBehaviour
                 continue;
             }
 
+            // Figure out which axis the doorway is facing along
             bool alongZ = info.m_OriginalAlongZ;
 
             // Deal with 90-degree rotations; we'll have a swapped direction for doors in that case
@@ -111,13 +114,17 @@ public class Structure : MonoBehaviour
                 }
             }
 
+            // Grab the two structures next to the doorway
             Structure lhs = Manager.instance.StructureFromGrid(doorway.transform.position - (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
             Structure rhs = Manager.instance.StructureFromGrid(doorway.transform.position + (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
-
+            Assert.IsTrue(lhs == this || rhs == this);  // One structure must be us
+            Assert.IsTrue(lhs != this || rhs != this);  // The other structure must be the other structure (or null)
+            
+            // Assume we're blocked
             bool doorwayBlocked = true;
 
-            Assert.IsTrue(lhs != this || rhs != this);
-            Assert.IsTrue(lhs == this || rhs == this);
+            // For whichever structure isn't us, see if it has a doorway at the appropriate place
+            // If it does, we remove our doorway
             if (lhs != null && lhs != this)
             {
                 doorwayBlocked &= !lhs.HasDoorway(doorway.transform.position);
@@ -132,6 +139,7 @@ public class Structure : MonoBehaviour
     }
 
     #if UNITY_EDITOR
+        // Draw red squares if things are misaligned, white if they're aligned properly
         public virtual void OnDrawGizmos()
         {
             if (m_DestroyTool)
@@ -168,33 +176,36 @@ public class Structure : MonoBehaviour
 
     bool ValidateOccupied(Vector3 position)
     {
+        // Validating an occupied flag is easy; just make sure it's on the grid and on y=0
+        // In theory we should also check if there are duplicates, but nobody's made that mistake yet. Add if it turns out someone does.
         Vector3 clampedCenter = Manager.GridFromWorld(position);
         return position == clampedCenter && position.y == 0;
     }
 
     bool ValidateDoorway(Vector3 position, out bool alongZ)
     {
+        // Validating a doorway is kinda tricky
+
         // Round to half-grid position
         Vector3 clampedCenter = new Vector3(MathUtil.RoundTo(position.x, Constants.GridSize / 2), 0f, MathUtil.RoundTo(position.z, Constants.GridSize / 2));
 
-        // Check to see if we're on exactly one half-grid
+        // Check to see if we're on exactly *one* half-grid - if so, we're in the middle of a wall. Two half-grids would be a corner, zero would be in the middle of a square.
         bool xAligned = clampedCenter.x == MathUtil.RoundTo(clampedCenter.x, Constants.GridSize);
         bool zAligned = clampedCenter.z == MathUtil.RoundTo(clampedCenter.z, Constants.GridSize);
 
-        // Must be aligned on exactly one axis
         if (xAligned == zAligned)
         {
-            // doesn't really matter
+            // Result doesn't really matter; we're in an invalid state anyway
             alongZ = false;
             return false;
         }
 
         if (xAligned)
         {
-            // If it's aligned on the x axis, that means it's a z-facing door
+            // If it's aligned on a wall along the x axis, that means it's a z-facing door
             alongZ = true;
 
-            // doors must be placed between an occupied square and a non-occupied square
+            // Doors must be placed between an occupied square and a non-occupied square
             if (HasOccupied(clampedCenter - Vector3.forward * Constants.GridSize / 2) == HasOccupied(clampedCenter + Vector3.forward * Constants.GridSize / 2))
             {
                 return false;
@@ -202,16 +213,17 @@ public class Structure : MonoBehaviour
         }
         else
         {
-            // If it's aligned on the z axis, that means it's an x-facing door
+            // If it's aligned on a wall along the z axis, that means it's an x-facing door
             alongZ = false;
 
-            // doors must be placed between an occupied square and a non-occupied square
+            // Doors must be placed between an occupied square and a non-occupied square
             if (HasOccupied(clampedCenter - Vector3.right * Constants.GridSize / 2) == HasOccupied(clampedCenter + Vector3.right * Constants.GridSize / 2))
             {
                 return false;
             }
         }
 
+        // Verify it's grid-aligned and on y=0
         return position == clampedCenter && position.y == 0f;
     }
 }

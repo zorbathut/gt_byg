@@ -21,6 +21,7 @@ public class Builder : MonoBehaviour
     {
         string popupMessage = null;
 
+        // Check if the player chose a tool
         for (int i = 0; i < m_Buildables.Count; ++i)
         {
             if (Input.GetKeyDown((i + 1).ToString()))
@@ -39,6 +40,7 @@ public class Builder : MonoBehaviour
             }
         }
 
+        // Check for rotations
         if (Input.mouseScrollDelta.y > 0)
         {
             m_BuildCursor.transform.Rotate(Vector3.up, 90);
@@ -56,6 +58,7 @@ public class Builder : MonoBehaviour
             m_BuildCursor.transform.position = targetPosition;
         }
 
+        // Tool usage
         if (Input.GetMouseButtonDown(0) && !m_BuildCursor.GetDestroyTool())
         {
             Manager.instance.AttemptPlace(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out popupMessage);
@@ -65,6 +68,7 @@ public class Builder : MonoBehaviour
             Manager.instance.AttemptRemove(m_BuildCursor.transform.position, out popupMessage);
         }
 
+        // Show our debug message, if we have one
         if (popupMessage != null)
         {
             GameObject.FindGameObjectWithTag(Tags.UI).GetComponent<MainUI>().GetPopupText().DisplayText(popupMessage, Color.white);
@@ -74,23 +78,26 @@ public class Builder : MonoBehaviour
 
     void ResyncBuildCursor()
     {
+        // Get rid of old cursor
         if (m_BuildCursor)
         {
             Destroy(m_BuildCursor.gameObject);
             m_BuildCursor = null;
         }
 
+        // Create new cursor
         m_BuildCursor = Instantiate(m_Buildables[m_CurrentBuildable]);
 
         if (!m_BuildCursor.GetDestroyTool())
         {
-            // Set all materials
+            // Override materials for the construction tool
             foreach (MeshRenderer renderer in m_BuildCursor.GetComponentsInChildren<MeshRenderer>())
             {
                 renderer.material = m_ConstructionMaterial;
             }
         }
 
+        // Get rid of all collisions so we don't walk into our own tool
         foreach (Collider collider in m_BuildCursor.GetComponentsInChildren<Collider>())
         {
             Destroy(collider);
