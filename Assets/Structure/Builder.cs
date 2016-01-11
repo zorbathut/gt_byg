@@ -56,11 +56,11 @@ public class Builder : MonoBehaviour
             m_BuildCursor.transform.position = targetPosition;
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !m_BuildCursor.GetDestroyTool())
         {
             Manager.instance.AttemptPlace(m_Buildables[m_CurrentBuildable], m_BuildCursor.transform, out popupMessage);
         }
-        else if (Input.GetMouseButtonDown(1))
+        else if (Input.GetMouseButtonDown(0) && m_BuildCursor.GetDestroyTool())
         {
             Manager.instance.AttemptRemove(m_BuildCursor.transform.position, out popupMessage);
         }
