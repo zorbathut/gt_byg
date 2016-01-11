@@ -97,7 +97,7 @@ public class Structure : MonoBehaviour
                 float angle;
                 Vector3 axis;
                 transform.rotation.ToAngleAxis(out angle, out axis);
-                if (angle != 0 && angle != 180)
+                if (Mathf.Abs(angle - 90) < 1 || Mathf.Abs(angle - 270) < 1)
                 {
                     alongZ = !alongZ;
                 }
