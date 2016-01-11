@@ -7,6 +7,8 @@ public class Builder : MonoBehaviour
 {
     [SerializeField] List<Structure> m_Buildables;
 
+    [SerializeField] Material m_ConstructionMaterial;
+
     int m_CurrentBuildable = 1;
     Structure m_BuildCursor;
 
@@ -75,9 +77,19 @@ public class Builder : MonoBehaviour
         if (m_BuildCursor)
         {
             Destroy(m_BuildCursor.gameObject);
+            m_BuildCursor = null;
         }
 
         m_BuildCursor = Instantiate(m_Buildables[m_CurrentBuildable]);
+
+        if (!m_BuildCursor.GetDestroyTool())
+        {
+            // Set all materials
+            foreach (MeshRenderer renderer in m_BuildCursor.GetComponentsInChildren<MeshRenderer>())
+            {
+                renderer.material = m_ConstructionMaterial;
+            }
+        }
 
         foreach (Collider collider in m_BuildCursor.GetComponentsInChildren<Collider>())
         {

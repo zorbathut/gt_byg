@@ -8,11 +8,14 @@ public class Structure : MonoBehaviour
     [SerializeField] Transform m_Occupied;
     [SerializeField] Transform m_Doorway;
 
+    [SerializeField] bool m_DestroyTool = false;
+
     [SerializeField, HideInInspector] bool m_Standardized = false;
+    
     protected virtual void Awake()
     {
         // Run an initialization pass to generate intermediate info
-        if (!m_Standardized)
+        if (!m_Standardized && !m_DestroyTool)
         {
             // Clamp occupied/doorway to grid
             foreach (Transform occupiedSquare in m_Occupied)
@@ -61,6 +64,11 @@ public class Structure : MonoBehaviour
         }
 
         return false;
+    }
+
+    public bool GetDestroyTool()
+    {
+        return m_DestroyTool;
     }
 
     // This is potentially unnecessarily slow, but it's not called often enough to really matter, and frequently it's called when the object has, in fact, moved
@@ -126,6 +134,11 @@ public class Structure : MonoBehaviour
     #if UNITY_EDITOR
         public virtual void OnDrawGizmos()
         {
+            if (m_DestroyTool)
+            {
+                return;
+            }
+
             foreach (Transform occupiedSquare in m_Occupied)
             {
                 if (ValidateOccupied(occupiedSquare.position))
