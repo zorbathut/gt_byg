@@ -51,10 +51,14 @@ public class Builder : MonoBehaviour
         }
 
         // Move highlight box, figure out what the user's pointing at
+        Ray screenRay = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, 1 << Layers.BuildTarget))
+        if (Physics.Raycast(screenRay, out hit, Mathf.Infinity))
         {
-            Vector3 targetPosition = Manager.GridFromWorld(hit.point);
+            // Our target point slightly penetrates through; this is so aiming at a building actually targets a point inside the building, instead of the very edge of the building
+            Vector3 targetPoint = hit.point + screenRay * 0.1f;
+
+            Vector3 targetPosition = Manager.GridFromWorld(targetPoint);
             m_BuildCursor.transform.position = targetPosition;
         }
 
