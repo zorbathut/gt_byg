@@ -60,6 +60,12 @@ public class Builder : MonoBehaviour
 
             Vector3 targetPosition = Manager.GridFromWorld(targetPoint);
             m_BuildCursor.transform.position = targetPosition;
+
+            m_BuildCursor.gameObject.SetActive(true);
+        }
+        else
+        {
+            m_BuildCursor.gameObject.SetActive(false);
         }
 
         // Tool usage
@@ -91,6 +97,7 @@ public class Builder : MonoBehaviour
 
         // Create new cursor
         m_BuildCursor = Instantiate(m_Buildables[m_CurrentBuildable]);
+        m_BuildCursor.gameObject.SetActive(false);  // Start disabled - on the off chance the player mashes two buttons in one frame, this will make the old one invisible
 
         if (!m_BuildCursor.GetDestroyTool())
         {
