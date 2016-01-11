@@ -95,7 +95,7 @@ public class Manager : MonoBehaviour
 
     public static IntVector2 IndexFromGrid(Vector3 input)
     {
-        Assert.IsTrue(input == GridFromWorld(input));
+        Assert.IsTrue(input == GridFromWorld(input), string.Format("Tried to get index from {0} which is off-grid", input));
         return new IntVector2(Mathf.RoundToInt(input.x / Constants.GridSize), Mathf.RoundToInt(input.z / Constants.GridSize));
     }
 
@@ -171,6 +171,35 @@ public class Manager : MonoBehaviour
 
     void ResyncDoorwaysAround(Structure structure)
     {
-        // todo: actually do the thing this function is intended for
+        // First, figure out which set of structures needs to be resynced
+        HashSet<Structure> resync = new HashSet<Structure>();
+        resync.Add(structure);
+
+        foreach (Vector3 occupiedPosition in structure.GetOccupied())
+        {
+            foreach (Vector3 delta in MathUtil.GetManhattanAdjacencies())
+            {
+                Structure adjacent = m_WorldLookup.Lookup(IndexFromGrid(occupiedPosition + delta * Constants.GridSize));
+                if (adjacent)
+                {
+                    resync.Add(adjacent);
+                }
+            }
+        }
+
+        // Now that we have an appropriate set of structures, go through each door in each structure and look for an appropriate linkage
+        foreach (Structure target in resync)
+        {
+            target.ResyncDoorways();
+        }
+    }
+
+    /////////////////////////////////////////////
+    // STATE LOOKUP
+    //
+
+    public Structure StructureFromGrid(Vector3 grid)
+    {
+        return m_WorldLookup.Lookup(IndexFromGrid(grid));
     }
 }
