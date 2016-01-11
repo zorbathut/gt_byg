@@ -26,12 +26,7 @@ public class Structure : MonoBehaviour
             // Validate that doorways are on grid; also, attach StructureDoorwayInfo so we don't have
             foreach (Transform doorwaySquare in m_Doorway)
             {
-                bool alongZ;
-                bool valid = ValidateDoorway(doorwaySquare.position, out alongZ);
-                Assert.IsTrue(valid);
-
-                StructureDoorwayInfo info = doorwaySquare.gameObject.AddComponent<StructureDoorwayInfo>();
-                info.m_OriginalAlongZ = alongZ;
+                Assert.IsTrue(ValidateDoorway(doorwaySquare.position));
             }
 
             m_Standardized = true;
@@ -92,31 +87,9 @@ public class Structure : MonoBehaviour
     {
         foreach (Transform doorway in m_Doorway.transform)
         {
-            StructureDoorwayInfo info = doorway.GetComponent<StructureDoorwayInfo>();
-
-            Assert.IsTrue(info != null);
-            if (!info)
-            {
-                continue;
-            }
-
-            // Figure out which axis the doorway is facing along
-            bool alongZ = info.m_OriginalAlongZ;
-
-            // Deal with 90-degree rotations; we'll have a swapped direction for doors in that case
-            {
-                float angle;
-                Vector3 axis;
-                transform.rotation.ToAngleAxis(out angle, out axis);
-                if (Mathf.Abs(angle - 90) < 1 || Mathf.Abs(angle - 270) < 1)
-                {
-                    alongZ = !alongZ;
-                }
-            }
-
             // Grab the two structures next to the doorway
-            Structure lhs = Manager.instance.StructureFromGrid(doorway.transform.position - (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
-            Structure rhs = Manager.instance.StructureFromGrid(doorway.transform.position + (alongZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+            Structure lhs = Manager.instance.StructureFromGrid(doorway.transform.position - (IsDoorwayFacingZ(doorway.transform.position) ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+            Structure rhs = Manager.instance.StructureFromGrid(doorway.transform.position + (IsDoorwayFacingZ(doorway.transform.position) ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
             Assert.IsTrue(lhs == this || rhs == this);  // One structure must be us
             Assert.IsTrue(lhs != this || rhs != this);  // The other structure must be the other structure (or null)
             
@@ -136,6 +109,20 @@ public class Structure : MonoBehaviour
 
             doorway.gameObject.SetActive(doorwayBlocked);
         }
+    }
+
+    static bool IsDoorwayFacingZ(Vector3 position)
+    {
+        // "more magic"
+        return Mathf.Abs(position.x - MathUtil.RoundTo(position.x, Constants.GridSize)) < Constants.GridSize / 100;
+
+        // Doorways are required to be grid-aligned on exactly one axis and half-grid-aligned on the other, so they are effectively placed at the midpoint of a wall
+        // This is validated at runtime, so we simply assume it here
+        
+        // If a doorway is aligned to the x-axis, then that means it's inside a wall running along that x-axis
+        // And if it's inside an x-parallel wall, then the doorway is actually facing the z axis
+
+        // The only other part of that equation is a small epsilon just in case Unity doesn't do an integer-accurate rotation
     }
 
     #if UNITY_EDITOR
@@ -161,8 +148,7 @@ public class Structure : MonoBehaviour
 
             foreach (Transform doorwaySquare in m_Doorway)
             {
-                bool doorwayAlongZ;
-                if (ValidateDoorway(doorwaySquare.position, out doorwayAlongZ))
+                if (ValidateDoorway(doorwaySquare.position))
                 {
                     GizmoUtil.DrawSquareAround(doorwaySquare.position, 1f, Color.white);
                 }
@@ -178,52 +164,49 @@ public class Structure : MonoBehaviour
     {
         // Validating an occupied flag is easy; just make sure it's on the grid and on y=0
         // In theory we should also check if there are duplicates, but nobody's made that mistake yet. Add if it turns out someone does.
-        Vector3 clampedCenter = Manager.GridFromWorld(position);
-        return position == clampedCenter && position.y == 0;
+        return position == Manager.GridFromWorld(position) && position.y == 0;
     }
 
-    bool ValidateDoorway(Vector3 position, out bool alongZ)
+    bool ValidateDoorway(Vector3 position)
     {
         // Validating a doorway is kinda tricky
 
+        // Doorways don't go on the same grid - they go between grid points, on half-grid vertices
+        // But only *specific* half-grid vertices - ones directly between two normal grid vertices, not midway between a set of four
+        // This makes it a little awkward to validate
+
+        // First, validate that we're on exactly one half-grid position
         // Round to half-grid position
         Vector3 clampedCenter = new Vector3(MathUtil.RoundTo(position.x, Constants.GridSize / 2), 0f, MathUtil.RoundTo(position.z, Constants.GridSize / 2));
 
-        // Check to see if we're on exactly *one* half-grid - if so, we're in the middle of a wall. Two half-grids would be a corner, zero would be in the middle of a square.
-        bool xAligned = clampedCenter.x == MathUtil.RoundTo(clampedCenter.x, Constants.GridSize);
-        bool zAligned = clampedCenter.z == MathUtil.RoundTo(clampedCenter.z, Constants.GridSize);
-
-        if (xAligned == zAligned)
         {
-            // Result doesn't really matter; we're in an invalid state anyway
-            alongZ = false;
+            // Check to see if we're on exactly *one* half-grid - if so, we're in the middle of a wall. Two half-grids would be a corner, zero would be in the middle of a square.
+            bool xAligned = clampedCenter.x == MathUtil.RoundTo(clampedCenter.x, Constants.GridSize);
+            bool zAligned = clampedCenter.z == MathUtil.RoundTo(clampedCenter.z, Constants.GridSize);
+
+            if (xAligned == zAligned)
+            {
+                // We're on either zero half-grids or two half-grids, both of which are wrong
+                return false;
+            }
+        }
+
+        // Second, make sure the doorway is between an occupied square and a non-occupied square
+        // Structures can't have internal doors - they would always be open, which is silly
+        // And they also can't have 100% external doors because then why are they part of this structure?
+        bool facingZ = IsDoorwayFacingZ(position);
+
+        bool lhsOccupied = HasOccupied(position - (facingZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+        bool rhsOccupied = HasOccupied(position + (facingZ ? Vector3.forward : Vector3.right) * Constants.GridSize / 2);
+
+        if (lhsOccupied == rhsOccupied)
+        {
+            // We have either zero occupied (external door) or two occupied (internal door), both of which are invalid
             return false;
+
         }
 
-        if (xAligned)
-        {
-            // If it's aligned on a wall along the x axis, that means it's a z-facing door
-            alongZ = true;
-
-            // Doors must be placed between an occupied square and a non-occupied square
-            if (HasOccupied(clampedCenter - Vector3.forward * Constants.GridSize / 2) == HasOccupied(clampedCenter + Vector3.forward * Constants.GridSize / 2))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            // If it's aligned on a wall along the z axis, that means it's an x-facing door
-            alongZ = false;
-
-            // Doors must be placed between an occupied square and a non-occupied square
-            if (HasOccupied(clampedCenter - Vector3.right * Constants.GridSize / 2) == HasOccupied(clampedCenter + Vector3.right * Constants.GridSize / 2))
-            {
-                return false;
-            }
-        }
-
-        // Verify it's grid-aligned and on y=0
+        // Finally, verify it's half-grid-aligned and on y=0
         return position == clampedCenter && position.y == 0f;
     }
 }
